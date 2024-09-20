@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кружки с номерами</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+        }
+        .circle {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: #0000ff;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            font-size: 20px;
+            user-select: none;
+            cursor: grab; /* Добавлено это свойство */
+        }
+        .circle:active {
+            cursor: grabbing; /* Изменение курсора при перетаскивании */
+        }
+    </style>
+</head>
+<body>
+    <script>
+        let count = 0;
+
+        document.body.addEventListener('click', function(event) {
+            if (event.target.className === 'circle') return; // Игнорировать клики на кружках
+            count++;
+            const circle = document.createElement('div');
+            circle.className = 'circle';
+            circle.textContent = count;
+            circle.style.left = `${event.clientX - 12.5}px`;
+            circle.style.top = `${event.clientY - 12.5}px`;
+            document.body.appendChild(circle);
+
+            // Добавление обработчиков событий для перетаскивания
+            circle.addEventListener('mousedown', startDrag);
+        });
+
+        function startDrag(event) {
+            const circle = event.target;
+            let shiftX = event.clientX - circle.getBoundingClientRect().left;
+            let shiftY = event.clientY - circle.getBoundingClientRect().top;
+
+            function moveAt(pageX, pageY) {
+                circle.style.left = pageX - shiftX + 'px';
+                circle.style.top = pageY - shiftY + 'px';
+            }
+
+            function onMouseMove(event) {
+                moveAt(event.pageX, event.pageY);
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+
+            circle.onmouseup = function() {
+                document.removeEventListener('mousemove', onMouseMove);
+                circle.onmouseup = null;
+            };
+        }
+
+        document.body.addEventListener('dragstart', function(event) {
+            event.preventDefault();
+        });
+    </script>
+</body>
+</html>
