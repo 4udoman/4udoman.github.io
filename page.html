@@ -3,78 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кружки с номерами</title>
+    <title>Граф по матрице смежности</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
     <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #ffffff;
+        #network {
+            width: 100%;
+            height: 600px;
+            border: 1px solid lightgray;
         }
-        .circle {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            background-color: #0000ff;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: absolute;
-            font-size: 20px;
-            user-select: none;
-            cursor: grab; /* Добавлено это свойство */
+        #inputContainer {
+            margin-bottom: 10px;
         }
-        .circle:active {
-            cursor: grabbing; /* Изменение курсора при перетаскивании */
+        #adjacencyMatrix {
+            width: 100%;
+            height: 100px;
         }
     </style>
 </head>
 <body>
+    <div id="inputContainer">
+        <textarea id="adjacencyMatrix" placeholder="Введите матрицу смежности (через пробелы для разделения элементов)"></textarea>
+        <button id="inputButton">Нарисовать граф</button>
+    </div>
+    <div id="network"></div>
+
     <script>
-        let count = 0;
+        let currentMatrix = [];
 
-        document.body.addEventListener('click', function(event) {
-            if (event.target.className === 'circle') return; // Игнорировать клики на кружках
-            count++;
-            const circle = document.createElement('div');
-            circle.className = 'circle';
-            circle.textContent = count;
-            circle.style.left = `${event.clientX - 12.5}px`;
-            circle.style.top = `${event.clientY - 12.5}px`;
-            document.body.appendChild(circle);
-
-            // Добавление обработчиков событий для перетаскивания
-            circle.addEventListener('mousedown', startDrag);
+        document.getElementById('inputButton').addEventListener('click', function () {
+            let inputMatrix = document.getElementById('adjacencyMatrix').value.trim();
+            if (inputMatrix !== "") {
+                if (inputMatrix.split(' ').length === 1 && !isNaN(inputMatrix)) {
+                    // Генерация случайного графа
+                    let numVertices = parseInt(inputMatrix);
+                    let randomMatrix = generateRandomMatrix(numVertices);
+                    document.getElementById('adjacencyMatrix').value = randomMatrix.map(row => row.join(' ')).join('\n');
+                    currentMatrix = randomMatrix;
+                } else {
+                    currentMatrix = inputMatrix.split('\n').map(row => row.trim().split(' ').map(Number));
+                }
+                drawGraph(currentMatrix);
+            }
         });
 
-        function startDrag(event) {
-            const circle = event.target;
-            let shiftX = event.clientX - circle.getBoundingClientRect().left;
-            let shiftY = event.clientY - circle.getBoundingClientRect().top;
-
-            function moveAt(pageX, pageY) {
-                circle.style.left = pageX - shiftX + 'px';
-                circle.style.top = pageY - shiftY + 'px';
+        function generateRandomMatrix(size) {
+            let matrix = [];
+            for (let i = 0; i < size; i++) {
+                let row = [];
+                for (let j = 0; j < size; j++) {
+                    if (i === j) {
+                        row.push(0); // Без самопетель
+                    } else {
+                        row.push(Math.random() < 0.3 ? 1 : 0);
+                    }
+                }
+                matrix.push(row);
             }
-
-            function onMouseMove(event) {
-                moveAt(event.pageX, event.pageY);
-            }
-
-            document.addEventListener('mousemove', onMouseMove);
-
-            circle.onmouseup = function() {
-                document.removeEventListener('mousemove', onMouseMove);
-                circle.onmouseup = null;
-            };
+            return matrix;
         }
 
-        document.body.addEventListener('dragstart', function(event) {
-            event.preventDefault();
-        });
+        function drawGraph(matrix) {
+            const size = matrix.length;
+            if (matrix.some(row => row.length !== size)) {
+                alert('Некорректная матрица смежности.');
+                return;
+            }
+
+            let nodes = [];
+            let edges = [];
+
+            for (let i = 0; i < size; i++) {
+                nodes.push({ id: i, label: String(i), color: '#D0D0D0' });
+            }
+
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (matrix[i][j] === 1) {
+                        edges.push({ from: i, to: j, arrows: 'to', color: { color: '#000000' } });
+                    }
+                }
+            }
+
+            let container = document.getElementById('network');
+            let data = {
+                nodes: new vis.DataSet(nodes),
+                edges: new vis.DataSet(edges),
+            };
+            let options = {
+                layout: {
+                    improvedLayout: true,
+                    hierarchical: false
+                },
+                physics: {
+                    enabled: true,
+                    solver: 'forceAtlas2Based',
+                    stabilization: {
+                        iterations: 150
+                    }
+                }
+            };
+            new vis.Network(container, data, options);
+        }
     </script>
 </body>
 </html>
